@@ -1,16 +1,27 @@
 import tdl
 
+from entity import Entity
 from input_handlers import handle_keys
+from map_utils import make_map
+from render_functions import clear_all, render_all
 
 def main():
-	print("HELLO WORLD!");
 	# Defining variables for screen size.
 	screen_width = 80;
 	screen_height = 50;
 
-	# PlayerPosition.
-	player_x = int(screen_width / 2); # Initial X axis position
-	player_y = int(screen_height / 2);	# Initial Y axis position
+	map_width = 80;
+	map_height = 45;
+
+	colors = {
+		'dark_wall' 	: ( 255, 255, 255),
+		'dark_ground' 	: ( 0, 0, 0)
+	};
+
+	player = Entity(int(screen_width/2), int(screen_height/2), '@', (255, 255, 255));
+	npc = Entity(int(screen_width/2 - 5), int(screen_height/2), '@', (255, 255, 0));
+
+	entities = [npc, player];
 
 	# We're telling which font to use.
 	tdl.set_font('consolas12x12.png', greyscale=True, altLayout=True);
@@ -18,17 +29,26 @@ def main():
 	# Creating screen.
 	root_console = tdl.init(screen_width, screen_height, title='Roguelike Tutorial Revised');
 	game_console = tdl.Console(screen_width, screen_height);
-
+	game_map = tdl.map.Map(map_width, map_height);
+	make_map(game_map)
 
 	# Game Loop.
 	while not tdl.event.is_window_closed():
 
 		# UPDATE
-		game_console.draw_char(player_x, player_y, '@', bg=None, fg=(255, 255, 255));
-		root_console.blit(game_console, 0, 0, screen_width, screen_height, 0, 0)
+		render_all(
+			game_console, 
+			entities, 
+			game_map, 
+			root_console, 
+			screen_width, 
+			screen_height, 
+			colors
+		);
+
 		tdl.flush(); # RENDER SCREEN
 
-		game_console.draw_char(player_x, player_y, ' ', bg=None);
+		clear_all(game_console, entities)
 
 		# CAPTURE EVENTS
 		for event in tdl.event.get():
@@ -49,8 +69,8 @@ def main():
 
 		if move:
 			dx, dy = move;
-			player_x += dx;
-			player_y += dy;
+			if(game_map.walkable[player.x + dx, player.y + dy]):
+				player.move(dx, dy);
 
 		if exit:
 			return True;
