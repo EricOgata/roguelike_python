@@ -4,7 +4,7 @@ def render_all(con, entities, game_map, root_console, screen_width, screen_heigh
         wall = not game_map.transparent[x, y];
 
         if wall:
-            con.draw_char(x, y, None, fg=None, bg=colors.get('dark_wall'));
+            con.draw_char(x, y, "#", fg=colors.get('dark_wall'), bg=None);
         else:
             con.draw_char(x, y, None, fg=None, bg=colors.get('dark_ground'));            
 

@@ -13,15 +13,19 @@ def main():
 	map_width = 80;
 	map_height = 45;
 
+	room_max_size = 10;
+	room_min_size = 6;
+	max_rooms = 30;
+
 	colors = {
 		'dark_wall' 	: ( 255, 255, 255),
 		'dark_ground' 	: ( 0, 0, 0)
 	};
 
 	player = Entity(int(screen_width/2), int(screen_height/2), '@', (255, 255, 255));
-	npc = Entity(int(screen_width/2 - 5), int(screen_height/2), '@', (255, 255, 0));
+	# npc = Entity(int(screen_width/2 - 5), int(screen_height/2), '@', (255, 255, 0));
 
-	entities = [npc, player];
+	entities = [player];
 
 	# We're telling which font to use.
 	tdl.set_font('consolas12x12.png', greyscale=True, altLayout=True);
@@ -30,7 +34,8 @@ def main():
 	root_console = tdl.init(screen_width, screen_height, title='Roguelike Tutorial Revised');
 	game_console = tdl.Console(screen_width, screen_height);
 	game_map = tdl.map.Map(map_width, map_height);
-	make_map(game_map)
+	## Generate game map.
+	make_map(game_map, max_rooms, room_min_size, room_max_size, map_width, map_height, player);
 
 	# Game Loop.
 	while not tdl.event.is_window_closed():
