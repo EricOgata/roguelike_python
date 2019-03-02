@@ -1,10 +1,12 @@
 import tdl
 
+from components.fighter import Fighter
 from entity import Entity, get_blocking_entities_at_location
 from game_states import GameStates
+from death_functions import kill_monster, kill_player
 from input_handlers import handle_keys
 from map_utils import GameMap, make_map
-from render_functions import clear_all, render_all
+from render_functions import clear_all, render_all, RenderOrder
 
 def main():
 	# Defining variables for screen size.
@@ -26,15 +28,17 @@ def main():
 	max_monsters_per_room = 3;
 
 	colors = {
-		'dark_wall' 		: (46, 64, 64),
-		'dark_ground' 		: (4, 32, 42),
-		'light_wall'		: (199, 207, 198),
-		'light_ground'		: (90, 110, 101),
-		'desaturated_green' : (221, 226, 218),
-		'darker_green' 		: (221, 226, 218)
+		'dark_wall' 		: (62, 25, 115),
+		'dark_ground' 		: (25, 0, 43),
+		'light_wall'		: (136, 75, 255),
+		'light_ground'		: (95, 0, 115),
+		'Orc' 				: (233, 0, 255),
+		'Troll' 			: (179, 31, 255),
+		'dead_char'			: (136, 75, 255)
 	};
 
-	player = Entity(0, 0, '@', (255, 255, 255), 'Player', blocks=True);
+	fighter_component = Fighter(hp=30, defense=2, power=5);
+	player = Entity(0, 0, '@', (255, 255, 255), 'Player', blocks=True, render_order=RenderOrder.ACTOR, fighter=fighter_component);
 	entities = [player];
 
 	# We're telling which font to use.
@@ -59,7 +63,7 @@ def main():
 			game_map.compute_fov(player.x, player.y, fov=fov_algorithm, radius=fov_radius, light_walls=fov_light_walls);
 
 		# UPDATE
-		render_all(game_console, entities, game_map, fov_recompute, root_console, screen_width, screen_height, colors);
+		render_all(game_console, entities, player, game_map, fov_recompute, root_console, screen_width, screen_height, colors);
 
 		tdl.flush(); # RENDER SCREEN
 
@@ -82,7 +86,10 @@ def main():
 
 		move = action.get('move');
 		exit = action.get('exit');
+
 		fullscreen = action.get('fullscreen');
+
+		player_turn_results = []
 
 		if move and game_state == GameStates.PLAYERS_TURN:
 			dx, dy = move;
@@ -93,7 +100,8 @@ def main():
 				target = get_blocking_entities_at_location(entities, destination_x, destination_y);
 
 				if target:
-					print('You kick the ' + target.name + ' in the shins, much to its annoyance!')
+					attack_results = player.fighter.attack(target);
+					player_turn_results.extend(attack_results);
 				else:
 					player.move(dx, dy);				
 					fov_recompute = True;
@@ -106,15 +114,46 @@ def main():
 			return True;
 
 		if fullscreen:
-			tdl.set_fullscreen(not tdl.get_fullscreen());
+			tdl.set_fullscreen(not tdl.get_fullscreen());		
 		
+		for player_turn_result in player_turn_results:
+			message = player_turn_result.get('message')
+			dead_entity = player_turn_result.get('dead')
+			
+			if message:
+				print(message)
+			
+			if dead_entity:
+				if dead_entity == player:
+					message, game_state = kill_player(dead_entity, colors);
+				else:
+					message = kill_monster(dead_entity, colors)
+				print(message)
+
 		if game_state == GameStates.ENEMY_TURN:
-			# for entity in entities:
-			# 	if entity != player: # Para cada entidade, tirando jogador.
-			# 		# inimigo pondera o significado da sua própria existência
-			# 		print('The ' + entity.name + ' ponders the meaning of its existence.');
-			# Devolve o turno para o jogador.
-			game_state = GameStates.PLAYERS_TURN;
+			for entity in entities:
+				if entity.ai:
+					enemy_turn_results = entity.ai.take_turn(player, game_map, entities)
+
+					for enemy_turn_result in enemy_turn_results:
+						message = enemy_turn_result.get('message')
+						dead_entity = enemy_turn_result.get('dead')
+
+						if message:
+							print(message)
+						if dead_entity:
+							if dead_entity == player:
+								message, game_state = kill_player(dead_entity, colors)
+							else:
+								message = kill_monster(dead_entity, colors)							
+							print(message)
+
+							if game_state == GameStates.PLAYER_DEAD:
+								break
+					if game_state == GameStates.PLAYER_DEAD:
+						break;
+			else:
+				game_state = GameStates.PLAYERS_TURN;
 
 
 if __name__ == '__main__':

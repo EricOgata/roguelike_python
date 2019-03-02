@@ -1,8 +1,10 @@
 from tdl.map import Map;
 
 from random import randint;
-
+from components.ai import BasicMonster;
+from components.fighter import Fighter;
 from entity import Entity;
+from render_functions import RenderOrder;
 
 
 class GameMap(Map):
@@ -61,10 +63,19 @@ def place_entities(room, entities, max_monster_per_room, colors):
         y = randint(room.y1 + 1, room.y2 - 1);
 
         if not any([entity for entity in entities if entity.x == x and entity.y == y]):
+            # CREATE MONSTERS.
             if randint(0, 100) < 80:
-                monster = Entity(x, y, 'o', colors.get('desaturated_green'), 'Orc', blocks=True);
+                fighter_component = Fighter(hp=10, defense=0, power=3);
+                ai_component = BasicMonster();
+
+                monster = Entity(x, y, 'o', colors.get('Orc'), 'Orc', blocks=True,
+                    render_order=RenderOrder.ACTOR, fighter=fighter_component, ai=ai_component);
             else:
-                monster = Entity(x, y, 'T', colors.get('darker_green'), 'Troll', blocks=True);
+                fighter_component = Fighter(hp=16, defense=1, power=4);
+                ai_component = BasicMonster();
+
+                monster = Entity(x, y, 'T', colors.get('Troll'), 'Troll', blocks=True,
+                    render_order=RenderOrder.ACTOR, fighter=fighter_component, ai=ai_component);
             entities.append(monster);
 
 ## Given a game_map object
@@ -123,5 +134,3 @@ def make_map(game_map, max_rooms, room_min_size, room_max_size, map_width, map_h
             # finally, append the new room to the list
             rooms.append(new_room);
             num_rooms += 1;
-
-
